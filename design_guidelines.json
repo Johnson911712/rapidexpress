@@ -1,0 +1,158 @@
+{
+  "theme_strategy": {
+    "theme_mode": "light",
+    "rationale": "A 'classic and professional' logistics platform prioritizes readability, data density, and trust. A light theme with deep navy and slate accents perfectly embodies authority and clarity (Archetype 4: Swiss & High-Contrast).",
+    "tone": "Authoritative, Reliable, Structured, Classic Corporate",
+    "app_segments": {
+      "marketing_page": "High visual impact, generous spacing, striking hero image with subtle dark overlay, clear CTAs.",
+      "admin_dashboard": "High-density Grid Mode B. Fixed left sidebar, top utility bar, cardless or 1px bordered dense tables.",
+      "courier_mobile": "Mobile-first, oversized tap targets, high-contrast statuses, focused camera/signature view.",
+      "customer_portal": "Minimalist, timeline-focused, easy-to-read shipment history cards."
+    }
+  },
+  "typography": {
+    "rules": "The Anti-Default Rule applies. Do NOT use Inter, Roboto, or Open Sans for headings. Use the designated classic corporate fonts below.",
+    "primary_font": {
+      "name": "IBM Plex Sans",
+      "import_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap",
+      "usage": "Headings and prominent structural labels (Dashboard stats, Nav links)."
+    },
+    "secondary_font": {
+      "name": "IBM Plex Sans",
+      "usage": "Body text, form inputs, table data."
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-bold",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed text-slate-700",
+      "small_labels": "text-xs tracking-[0.2em] uppercase text-slate-500 font-semibold"
+    }
+  },
+  "colors": {
+    "archetype": "Swiss & High-Contrast (Tailored for Corporate Logistics)",
+    "backgrounds": {
+      "app_bg": "#F8FAFC", 
+      "surface_white": "#FFFFFF",
+      "surface_muted": "#F1F5F9"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "disabled": "#94A3B8"
+    },
+    "brand": {
+      "primary": "#0284C7",
+      "primary_hover": "#0369A1",
+      "accent": "#0F172A"
+    },
+    "logistics_status": {
+      "order_created": "#64748B",
+      "picked_up": "#0284C7",
+      "in_transit": "#EAB308",
+      "out_for_delivery": "#F97316",
+      "delivered": "#16A34A",
+      "exception": "#DC2626"
+    },
+    "rules": [
+      "No full-screen gradients. Use solid colors.",
+      "Never use pure black (#000000) or pure gray (#808080). Use the slate palette which is tinted with cool blue.",
+      "Ensure minimum 4.5:1 contrast for normal text and 3:1 for large text.",
+      "DO NOT use teal green or teal blue (#1B93A4) anywhere."
+    ]
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing for Marketing (p-8 to p-24) / High Density for Admin (p-4 to p-6).",
+    "grids": {
+      "marketing": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8 to gap-12. Asymmetrical balance.",
+      "dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 to gap-6. Every pixel utilized, h-full on children.",
+      "dashboard_structure": "Fixed left sidebar (w-64), top bar (h-16), scrollable main content area."
+    },
+    "rules": [
+      "Grid items MUST be direct children of grid containers.",
+      "If using framer-motion, the motion.div must be the direct child.",
+      "Mobile max height for images is 80vh.",
+      "Containers with borders must have internal padding (p-6) to prevent text collision."
+    ]
+  },
+  "components_strategy": {
+    "surfaces": {
+      "marketing_cards": "Flat Solid backgrounds, subtle 1px border-slate-200, no drop shadows by default. Use hover lift (-translate-y-1) + shadow-lg.",
+      "dashboard_widgets": "Grid Borders (The Technical Look). border-collapse style, 1px subtle border, sharp or max 4px border-radius.",
+      "headers": "If content scrolls under, use Crystal Glassmorphism (bg-white/70 backdrop-blur-xl border-b border-slate-200/50). If solid, use bg-white border-b border-slate-200."
+    },
+    "buttons": {
+      "style": "Pill-shaped (rounded-full) or subtle rounded (rounded-md) depending on page. Marketing gets pill-shaped, Admin gets rounded-md.",
+      "interaction": "ALWAYS set explicit hover text colors (e.g., hover:bg-sky-700 hover:text-white). Focus states must have higher contrast ring."
+    },
+    "forms_and_tables": {
+      "inputs": "Shadcn UI customized. Solid borders, subtle focus rings (ring-2 ring-sky-500/50). Left aligned.",
+      "tables": "Dense rows for Admin dashboard. Sticky headers. Status columns use colored pill badges."
+    },
+    "tracking_timeline": {
+      "style": "Vertical line connecting dots. Active dots use status color, inactive dots use slate-200. Left aligned text describing status and timestamp."
+    }
+  },
+  "images": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxjYXJnbyUyMHNoaXAlMjBhZXJpYWx8ZW58MHx8fHwxNzg5ODY3NTA0fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Red and blue cargo ship aerial view. Use with bg-black/40 overlay for text legibility.",
+      "category": "marketing_hero"
+    },
+    "warehouse_feature": {
+      "url": "https://images.unsplash.com/photo-1592085198739-ffcad7f36b54?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsb2dpc3RpY3MlMjB3YXJlaG91c2V8ZW58MHx8fHwxNzg5ODY3NTA0fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Modern logistics warehouse shelving. Good for 'About Us' or feature sections.",
+      "category": "marketing_content"
+    },
+    "courier_delivery": {
+      "url": "https://images.pexels.com/photos/6169132/pexels-photo-6169132.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Delivery worker examining packages in a van.",
+      "category": "mobile_app_onboarding_or_feature"
+    },
+    "rules": [
+      "DO NOT use placeholder image URLs like placehold.it. Only use the curated images provided above.",
+      "Images used as backgrounds MUST have proper overlays (max bg-black/50 or bg-white/40) for text legibility."
+    ]
+  },
+  "motion_and_interactions": {
+    "rules": [
+      "Use specific property transitions (e.g., transition-transform duration-200 ease-out), NEVER 'transition-all'.",
+      "Add hover states to ALL interactive elements.",
+      "Courier mobile app needs snappy, immediate feedback interactions (e.g., swipe-to-complete or large tap animations)."
+    ]
+  },
+  "accessibility": {
+    "rules": [
+      "All text must meet APCA or WCAG AA contrast ratios.",
+      "All interactive elements MUST have data-testid attributes (e.g., data-testid='track-shipment-button').",
+      "Respect prefers-reduced-motion media queries.",
+      "NEVER use fully transparent backgrounds for overlays, headers, or dropdowns."
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build the UI using React (.js files), Tailwind CSS, and Shadcn UI components.",
+    "For icons, install and use 'lucide-react' (default) or '@phosphor-icons/react' for a more premium feel.",
+    "Install 'sonner' for toast notifications.",
+    "Implement a robust layout architecture: distinct layouts for Public Marketing, Admin Dashboard, Customer Portal, and Courier Mobile-Web.",
+    "Ensure the Admin Dashboard follows a classic sidebar + topbar + dense content layout.",
+    "The Tracking Timeline component should be a central, highly polished visual element, using the defined status colors.",
+    "The Courier mobile-web flow must feel like a native app: sticky bottom action bars, large tap targets, and full-screen camera/signature canvases.",
+    "NEVER use HTML input type='date' or basic <select>. Use Shadcn Calendar and Dropdown/Select components.",
+    "Ensure you add data-testid attributes to all critical interactive nodes for robust testing."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic outputs. Avoid 'AI slop'. Create distinctive, classic professional interfaces.",
+    "Dark colors look good when used independently. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts. Left-align text and forms.",
+    "Create depth through layered design elements with z-index hierarchy, but keep logistics data surfaces optically clear (solid).",
+    "You MUST NOT apply universal transitions (transition: all).",
+    "You MUST NOT center align the app container (.App { text-align: center; }).",
+    "Always use modern button styles with interaction animations and explicit hover colors.",
+    "NEVER use AI assistant emojis (🤖🧠💭) for icons.",
+    "Every interaction needs micro-animations. Static = dead.",
+    "Use generous spacing (2-3x normal) for marketing pages.",
+    "Missing categories? DO NOT use placeholder text for images. Use the provided URLs.",
+    "Prioritize Shadcn components. Override default opinionated heights (e.g., h-9 on tabs) when needed."
+  ]
+}
