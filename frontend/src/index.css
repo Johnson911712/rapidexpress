@@ -60,6 +60,39 @@ code, .font-mono {
     cursor: crosshair;
 }
 
+/* Live map marker */
+.rx-pin {
+    position: relative;
+    width: 28px;
+    height: 28px;
+}
+.rx-pin-dot {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    background: #0284c7;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(2, 132, 199, 0.6);
+}
+.rx-pin-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    background: rgba(2, 132, 199, 0.35);
+    animation: rx-pulse 1.8s ease-out infinite;
+}
+@keyframes rx-pulse {
+    0% { transform: scale(0.4); opacity: 0.8; }
+    100% { transform: scale(1.2); opacity: 0; }
+}
+.leaflet-container { font: inherit; }
+
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import StatusBadge from "@/components/StatusBadge";
 import TrackingTimeline from "@/components/TrackingTimeline";
+import LiveMap from "@/components/LiveMap";
 import api, { apiErr } from "@/lib/api";
 
 export default function TrackPage() {
@@ -31,6 +32,19 @@ export default function TrackPage() {
   };
 
   useEffect(() => { if (tn) doTrack(tn); }, [tn]);
+
+  // Poll for live courier location while out for delivery
+  useEffect(() => {
+    if (result?.status !== "out_for_delivery") return;
+    const num = result.tracking_number;
+    const t = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/track/${num}`);
+        setResult(data);
+      } catch {}
+    }, 12000);
+    return () => clearInterval(t);
+  }, [result?.status, result?.tracking_number]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -80,6 +94,16 @@ export default function TrackPage() {
                 <span className="font-medium">{result.destination || "Destination"}</span>
               </div>
             </Card>
+            {result.status === "out_for_delivery" && (
+              <Card className="p-6" data-testid="track-live-map">
+                <h2 className="mb-4 text-lg font-semibold text-slate-900">Live delivery tracking</h2>
+                {result.courier_location ? (
+                  <LiveMap lat={result.courier_location.lat} lng={result.courier_location.lng} updatedAt={result.courier_location.updated_at} courierName={result.courier_name} />
+                ) : (
+                  <p className="text-sm text-slate-500">Your courier is out for delivery. Live location will appear here as soon as they start moving.</p>
+                )}
+              </Card>
+            )}
             <Card className="p-6">
               <h2 className="mb-5 text-lg font-semibold text-slate-900">Shipment history</h2>
               <TrackingTimeline events={result.events} />

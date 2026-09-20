@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/StatusBadge";
 import TrackingTimeline from "@/components/TrackingTimeline";
+import LiveMap from "@/components/LiveMap";
 import { toast } from "sonner";
 import api, { apiErr } from "@/lib/api";
 
@@ -15,6 +16,12 @@ export default function PortalShipmentDetail() {
 
   const load = () => api.get(`/shipments/${id}`).then((r) => setData(r.data)).catch(() => {});
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    if (data?.shipment?.status !== "out_for_delivery") return;
+    const t = setInterval(load, 12000);
+    return () => clearInterval(t);
+  }, [data?.shipment?.status, id]);
 
   if (!data) return <div className="h-64 animate-pulse rounded-lg bg-slate-100" />;
   const s = data.shipment;
@@ -56,6 +63,17 @@ export default function PortalShipmentDetail() {
         <h2 className="mb-5 text-lg font-semibold text-slate-900">Tracking history</h2>
         <TrackingTimeline events={data.events} />
       </Card>
+
+      {s.status === "out_for_delivery" && (
+        <Card className="p-6" data-testid="portal-live-map">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Live delivery tracking</h2>
+          {s.courier_location ? (
+            <LiveMap lat={s.courier_location.lat} lng={s.courier_location.lng} updatedAt={s.courier_location.updated_at} courierName={s.assigned_courier_name} />
+          ) : (
+            <p className="text-sm text-slate-500">Your courier is out for delivery. Live location will appear here shortly.</p>
+          )}
+        </Card>
+      )}
 
       {data.proof && (
         <Card className="p-6" data-testid="portal-proof">

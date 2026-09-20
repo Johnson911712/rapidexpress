@@ -5,12 +5,18 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import os
+import re
+import ipaddress
 import logging
 import random
 import string
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Literal
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
 
+import httpx
 import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, Request, Response, HTTPException, Depends
@@ -157,6 +163,163 @@ async def notify_admins(title: str, message: str, link: str = ""):
 
 
 # ---------------------------------------------------------------------------
+# Email (Emergent-managed Resend)
+# ---------------------------------------------------------------------------
+EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY")
+EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Rapid Express Logistics")
+PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "").rstrip("/")
+
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+
+def _host_ok(host: str) -> bool:
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+
+def _same_site(shown: str, real: str) -> bool:
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href")
+            self._text = []
+
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text)))
+            self._href, self._text = None, []
+
+
+def _assert_safe_email(subject: str, html: str) -> None:
+    scan = _EmailScan(); scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms or input fields in email (G2)")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks the recipient for credentials: {p!r} (G2)")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError(f"Email links/assets must be absolute https: {url!r} (G3)")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError(f"Shortened, numeric-host or credential-bearing URL: {url!r} (G3)")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if not real:
+            continue
+        for m in _HOSTISH.finditer(text):
+            if not _same_site(m.group(1).lower(), real):
+                raise ValueError(f"Anchor text {m.group(1)!r} != real link host {real!r} (G3)")
+
+
+async def send_email(*, to: str, subject: str, html: str) -> Optional[str]:
+    if not EMAIL_KEY:
+        logger.warning("EMERGENT_EMAIL_KEY not set; skipping email")
+        return None
+    _assert_safe_email(subject, html)
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.post(
+            f"{EMAIL_BASE_URL}/api/v1/email/send",
+            headers={"X-Email-Key": EMAIL_KEY},
+            json=payload,
+        )
+    resp.raise_for_status()
+    return resp.json().get("id")
+
+
+STATUS_EMAIL = {
+    "picked_up": ("Your shipment has been picked up",
+                  "Good news — we've collected your parcel and it's now in our network."),
+    "out_for_delivery": ("Your shipment is out for delivery",
+                         "Your parcel is on the vehicle and heading your way today. You can watch it move live on the tracking page."),
+    "delivered": ("Your shipment has been delivered",
+                  "Your parcel has been delivered. Thank you for shipping with us."),
+}
+
+
+def _status_email_html(tracking_number: str, headline: str, body: str) -> str:
+    track_link = f"{PUBLIC_APP_URL}/track/{tracking_number}" if PUBLIC_APP_URL else "#"
+    btn = ""
+    if PUBLIC_APP_URL:
+        btn = (f'<tr><td style="padding:8px 0 4px"><a href="{escape(track_link)}" '
+               f'style="display:inline-block;background:#0284C7;color:#ffffff;text-decoration:none;'
+               f'padding:12px 22px;border-radius:6px;font-weight:600">Track your shipment</a></td></tr>')
+    return (
+        f'<table role="presentation" width="100%" style="background:#f1f5f9;padding:24px 0">'
+        f'<tr><td align="center">'
+        f'<table role="presentation" width="560" style="background:#ffffff;border-radius:10px;'
+        f'overflow:hidden;font-family:Arial,Helvetica,sans-serif">'
+        f'<tr><td style="background:#0f172a;padding:20px 28px">'
+        f'<span style="color:#ffffff;font-size:18px;font-weight:700">Rapid</span>'
+        f'<span style="color:#38bdf8;font-size:18px;font-weight:700">Express</span></td></tr>'
+        f'<tr><td style="padding:28px">'
+        f'<h1 style="margin:0 0 8px;font-size:20px;color:#0f172a">{escape(headline)}</h1>'
+        f'<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#475569">{escape(body)}</p>'
+        f'<table role="presentation"><tr><td style="font-size:13px;color:#64748b;padding-bottom:12px">'
+        f'Tracking number</td></tr><tr><td style="font-size:18px;font-weight:700;color:#0f172a;'
+        f'font-family:monospace;padding-bottom:16px">{escape(tracking_number)}</td></tr>{btn}</table>'
+        f'</td></tr>'
+        f'<tr><td style="padding:18px 28px;border-top:1px solid #e2e8f0">'
+        f'<p style="margin:0;font-size:12px;color:#94a3b8">Sent by {escape(EMAIL_FROM_NAME)}. '
+        f'We never ask for your password or card details by email.</p></td></tr>'
+        f'</table></td></tr></table>'
+    )
+
+
+async def send_status_email(ship: dict, status: str):
+    recipient = ship.get("customer_email")
+    if not recipient or status not in STATUS_EMAIL:
+        return
+    headline, body = STATUS_EMAIL[status]
+    html = _status_email_html(ship["tracking_number"], headline, body)
+    try:
+        email_id = await send_email(to=recipient, subject=headline, html=html)
+        await db.email_logs.insert_one({
+            "id": new_id(), "shipment_id": ship["id"], "to": recipient,
+            "status": status, "subject": headline, "email_id": email_id,
+            "ok": True, "created_at": now_iso(),
+        })
+    except Exception as e:
+        logger.error("Status email failed: %s", e)
+        await db.email_logs.insert_one({
+            "id": new_id(), "shipment_id": ship["id"], "to": recipient,
+            "status": status, "subject": headline, "email_id": None,
+            "ok": False, "error": str(e), "created_at": now_iso(),
+        })
+
+
+# ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
 class Party(BaseModel):
@@ -232,6 +395,11 @@ class ProofIn(BaseModel):
 
 class CodIn(BaseModel):
     amount: float
+
+
+class LocationIn(BaseModel):
+    lat: float
+    lng: float
 
 
 class QuoteIn(BaseModel):
@@ -569,6 +737,7 @@ async def update_status(sid: str, body: StatusIn, user: dict = Depends(get_curre
     await notify_admins("Status update",
                         f"{ship['tracking_number']} -> {labels.get(body.status, body.status)}",
                         f"/admin/shipments")
+    await send_status_email(ship, body.status)
     return clean(await db.shipments.find_one({"id": sid}))
 
 
@@ -623,6 +792,18 @@ async def courier_shipments(courier: dict = Depends(require_roles("courier"))):
     return out
 
 
+@api.post("/shipments/{sid}/location")
+async def update_location(sid: str, body: LocationIn, courier: dict = Depends(require_roles("courier"))):
+    ship = await db.shipments.find_one({"id": sid})
+    if not ship:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if ship.get("assigned_courier_id") != courier["id"]:
+        raise HTTPException(status_code=403, detail="Not assigned to you")
+    await db.shipments.update_one({"id": sid}, {"$set": {"courier_location": {
+        "lat": body.lat, "lng": body.lng, "updated_at": now_iso()}}})
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------------------
 # Customer portal
 # ---------------------------------------------------------------------------
@@ -644,6 +825,9 @@ async def public_track(tracking_number: str):
     if not ship:
         raise HTTPException(status_code=404, detail="No shipment found with that tracking number")
     events = await db.tracking_events.find({"shipment_id": ship["id"]}).sort("created_at", 1).to_list(200)
+    courier_location = None
+    if ship["status"] == "out_for_delivery":
+        courier_location = ship.get("courier_location")
     return {
         "tracking_number": ship["tracking_number"],
         "status": ship["status"],
@@ -652,6 +836,8 @@ async def public_track(tracking_number: str):
         "recipient_name": ship["recipient"].get("name", ""),
         "estimated_weight": ship["package"].get("weight", 0),
         "created_at": ship["created_at"],
+        "courier_location": courier_location,
+        "courier_name": ship.get("assigned_courier_name") if ship["status"] == "out_for_delivery" else None,
         "events": [
             {"status": e["status"], "location": e.get("location", ""),
              "note": e.get("note", ""), "created_at": e["created_at"]}

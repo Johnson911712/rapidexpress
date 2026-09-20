@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Phone, Camera, Wallet, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Camera, Wallet, CheckCircle2, Navigation } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/StatusBadge";
 import SignaturePad from "@/components/SignaturePad";
+import LiveMap from "@/components/LiveMap";
 import { STATUS_META } from "@/lib/status";
 import { toast } from "sonner";
 import api, { apiErr } from "@/lib/api";
@@ -31,6 +32,9 @@ export default function CourierJobDetail() {
   const [proofNotes, setProofNotes] = useState("");
   const [codAmount, setCodAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [myLoc, setMyLoc] = useState(null);
+  const [geoError, setGeoError] = useState("");
+  const lastSent = useRef(0);
 
   const load = useCallback(async () => {
     const { data } = await api.get(`/shipments/${id}`);
@@ -40,6 +44,28 @@ export default function CourierJobDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Share live GPS location while out for delivery
+  const sharing = data?.shipment?.status === "out_for_delivery";
+  useEffect(() => {
+    if (!sharing) return;
+    if (!("geolocation" in navigator)) { setGeoError("Geolocation not supported on this device."); return; }
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setMyLoc({ lat: latitude, lng: longitude, updated_at: new Date().toISOString() });
+        setGeoError("");
+        const now = Date.now();
+        if (now - lastSent.current > 8000) {
+          lastSent.current = now;
+          api.post(`/shipments/${id}/location`, { lat: latitude, lng: longitude }).catch(() => {});
+        }
+      },
+      (err) => setGeoError(err.message || "Unable to get location. Enable location permission."),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [sharing, id]);
 
   if (!data) return <div className="h-64 animate-pulse rounded-lg bg-slate-100" />;
   const s = data.shipment;
@@ -127,6 +153,23 @@ export default function CourierJobDetail() {
           </div>
           {s.payment_method !== "cod" && s.payment_status !== "paid" && (
             <p className="mt-3 rounded-md bg-yellow-50 p-2 text-xs text-yellow-800">Awaiting payment — this shipment can't move until it's marked paid by admin.</p>
+          )}
+        </Card>
+      )}
+
+      {/* Live location sharing */}
+      {sharing && (
+        <Card className="p-4" data-testid="courier-location-card">
+          <div className="mb-3 flex items-center gap-2">
+            <Navigation className="h-4 w-4 text-sky-600" />
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Live location sharing</p>
+          </div>
+          {geoError ? (
+            <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{geoError}</p>
+          ) : myLoc ? (
+            <LiveMap lat={myLoc.lat} lng={myLoc.lng} updatedAt={myLoc.updated_at} courierName="you" />
+          ) : (
+            <p className="text-sm text-slate-500">Getting your location… allow location access to share it live with the customer.</p>
           )}
         </Card>
       )}
