@@ -4,6 +4,9 @@ import uuid
 import time
 import pytest
 import requests
+from dotenv import load_dotenv
+
+load_dotenv("/app/backend/.env")
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
@@ -15,8 +18,8 @@ if not BASE_URL:
 
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = "johnsonsweay199@gmail.com"
-ADMIN_PASSWORD = "Rapid@2026"
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 # Unique test suffix to avoid conflicts across runs
 SFX = uuid.uuid4().hex[:8]

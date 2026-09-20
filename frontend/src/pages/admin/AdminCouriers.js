@@ -18,7 +18,7 @@ export default function AdminCouriers() {
   const [saving, setSaving] = useState(false);
 
   const load = () => api.get("/admin/couriers").then((r) => setRows(r.data)).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 

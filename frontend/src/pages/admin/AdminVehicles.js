@@ -18,7 +18,7 @@ export default function AdminVehicles() {
   const [f, setF] = useState(blank);
 
   const load = () => api.get("/vehicles").then((r) => setRows(r.data)).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const create = async (e) => {
     e.preventDefault();

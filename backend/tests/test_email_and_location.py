@@ -24,8 +24,8 @@ if not BASE_URL:
                 BASE_URL = line.split("=", 1)[1].strip().rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = "johnsonsweay199@gmail.com"
-ADMIN_PASSWORD = "Rapid@2026"
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 SFX = uuid.uuid4().hex[:8]
 C1_EMAIL = f"tc1_{SFX}@example.com"

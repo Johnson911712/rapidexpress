@@ -18,6 +18,7 @@ export default function PortalSupport() {
   const [reply, setReply] = useState("");
 
   const load = () => api.get("/support").then((r) => { setRows(r.data); if (active) setActive(r.data.find((t) => t.id === active.id)); }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const create = async (e) => {

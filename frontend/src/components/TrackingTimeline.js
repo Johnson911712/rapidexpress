@@ -19,7 +19,7 @@ export default function TrackingTimeline({ events }) {
         const isLast = i === ordered.length - 1;
         const isFirst = i === 0;
         return (
-          <li key={i} className="relative flex gap-4 pb-6 last:pb-0">
+          <li key={`${e.created_at}-${e.status}`} className="relative flex gap-4 pb-6 last:pb-0">
             {!isLast && <span className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-slate-200" />}
             <span
               className={cn("relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white", isFirst ? "" : "opacity-90")}

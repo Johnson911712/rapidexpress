@@ -15,13 +15,13 @@ export default function PortalShipmentDetail() {
   const [data, setData] = useState(null);
 
   const load = () => api.get(`/shipments/${id}`).then((r) => setData(r.data)).catch(() => {});
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (data?.shipment?.status !== "out_for_delivery") return;
     const t = setInterval(load, 12000);
     return () => clearInterval(t);
-  }, [data?.shipment?.status, id]);
+  }, [data?.shipment?.status, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) return <div className="h-64 animate-pulse rounded-lg bg-slate-100" />;
   const s = data.shipment;

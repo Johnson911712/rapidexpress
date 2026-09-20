@@ -56,7 +56,7 @@ export default function AdminDashboard() {
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748B" }} />
               <Tooltip cursor={{ fill: "#F1F5F9" }} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                {chartData.map((e) => <Cell key={e.name} fill={e.color} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

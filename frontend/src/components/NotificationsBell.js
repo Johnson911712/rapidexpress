@@ -13,14 +13,16 @@ export default function NotificationsBell({ dark }) {
     try {
       const res = await api.get("/notifications");
       setData(res.data);
-    } catch {}
+    } catch (e) {
+      console.error("Failed to load notifications:", e);
+    }
   };
 
   useEffect(() => {
     load();
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- poll on mount
 
   const markAll = async () => {
     await api.post("/notifications/read-all");

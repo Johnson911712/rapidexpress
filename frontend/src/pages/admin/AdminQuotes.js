@@ -14,7 +14,7 @@ export default function AdminQuotes() {
   const [price, setPrice] = useState("");
 
   const load = () => api.get("/quotes").then((r) => setRows(r.data)).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitPrice = async () => {
     try {

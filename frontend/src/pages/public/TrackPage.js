@@ -41,7 +41,9 @@ export default function TrackPage() {
       try {
         const { data } = await api.get(`/track/${num}`);
         setResult(data);
-      } catch {}
+      } catch (e) {
+        console.error("Live tracking refresh failed:", e);
+      }
     }, 12000);
     return () => clearInterval(t);
   }, [result?.status, result?.tracking_number]);

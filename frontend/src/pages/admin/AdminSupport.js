@@ -12,7 +12,7 @@ export default function AdminSupport() {
   const [reply, setReply] = useState("");
 
   const load = () => api.get("/support").then((r) => { setRows(r.data); if (active) setActive(r.data.find((t) => t.id === active.id)); }).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendReply = async () => {
     if (!reply.trim()) return;

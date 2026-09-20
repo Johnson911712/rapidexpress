@@ -1,5 +1,6 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -34,8 +35,9 @@ import PortalSupport from "@/pages/portal/PortalSupport";
 function App() {
   return (
     <div className="App">
-      <AuthProvider>
-        <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        <AuthProvider>
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/track" element={<TrackPage />} />
@@ -70,7 +72,8 @@ function App() {
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" richColors />
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </div>
   );
 }

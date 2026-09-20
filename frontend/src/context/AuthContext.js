@@ -18,25 +18,27 @@ export function AuthProvider({ children }) {
     }
   };
 
-  useEffect(() => { loadMe(); }, []);
+  useEffect(() => { loadMe(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
 
   const login = async (email, password) => {
+    // Auth token is set as an httpOnly cookie by the server (safer than localStorage).
     const { data } = await api.post("/auth/login", { email, password });
-    localStorage.setItem("rx_token", data.token);
     setUser(data.user);
     return data.user;
   };
 
   const register = async (payload) => {
     const { data } = await api.post("/auth/register", payload);
-    localStorage.setItem("rx_token", data.token);
     setUser(data.user);
     return data.user;
   };
 
   const logout = async () => {
-    try { await api.post("/auth/logout"); } catch {}
-    localStorage.removeItem("rx_token");
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+      console.error("Logout request failed:", e);
+    }
     setUser(false);
   };
 
