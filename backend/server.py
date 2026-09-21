@@ -1043,10 +1043,22 @@ async def root():
 
 app.include_router(api)
 
+configured_origins = [
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("CORS_ORIGINS", "").split(",")
+    if origin.strip() and origin.strip() != "*"
+]
+if not configured_origins:
+    configured_origins = [
+        "https://rapidexpress.online",
+        "https://www.rapidexpress.online",
+        "http://localhost:3000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_origins=configured_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
