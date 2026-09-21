@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const configuredBackendUrl = process.env.REACT_APP_BACKEND_URL?.trim();
-const BACKEND_URL = configuredBackendUrl || window.location.origin;
+const isRapidExpressProduction = /(^|\.)rapidexpress\.online$/i.test(window.location.hostname);
+const BACKEND_URL = isRapidExpressProduction
+  ? window.location.origin
+  : configuredBackendUrl || window.location.origin;
 export const API = `${BACKEND_URL.replace(/\/$/, "")}/api`;
 
 const api = axios.create({ baseURL: API, withCredentials: true });
