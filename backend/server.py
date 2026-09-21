@@ -1062,12 +1062,24 @@ async def startup():
     admin_password = os.environ["ADMIN_PASSWORD"]
     existing = await db.users.find_one({"email": admin_email})
     if existing is None:
-        await db.users.insert_one({
-            "id": new_id(), "name": os.environ.get("ADMIN_NAME", "Admin"),
-            "email": admin_email, "password_hash": hash_password(admin_password),
-            "role": "admin", "phone": "", "active": True, "created_at": now_iso(),
-        })
-        logger.info("Seeded admin user %s", admin_email)
+        existing = await db.users.find_one({"role": "admin"}, sort=[("created_at", 1)])
+        if existing:
+            await db.users.update_one(
+                {"id": existing["id"]},
+                {"$set": {
+                    "email": admin_email,
+                    "password_hash": hash_password(admin_password),
+                    "name": os.environ.get("ADMIN_NAME", "Admin"),
+                }},
+            )
+            logger.info("Migrated admin account to %s", admin_email)
+        else:
+            await db.users.insert_one({
+                "id": new_id(), "name": os.environ.get("ADMIN_NAME", "Admin"),
+                "email": admin_email, "password_hash": hash_password(admin_password),
+                "role": "admin", "phone": "", "active": True, "created_at": now_iso(),
+            })
+            logger.info("Seeded admin user %s", admin_email)
     elif not verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email},
                                   {"$set": {"password_hash": hash_password(admin_password)}})
