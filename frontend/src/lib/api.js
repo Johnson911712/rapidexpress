@@ -2,8 +2,9 @@ import axios from "axios";
 
 const configuredBackendUrl = process.env.REACT_APP_BACKEND_URL?.trim();
 const isRapidExpressProduction = /(^|\.)rapidexpress\.online$/i.test(window.location.hostname);
+const productionBackendUrl = "https://rapidexpress-1k8u0c9dz-moorewill9112-3351s-projects.vercel.app";
 const BACKEND_URL = isRapidExpressProduction
-  ? window.location.origin
+  ? productionBackendUrl
   : configuredBackendUrl || window.location.origin;
 export const API = `${BACKEND_URL.replace(/\/$/, "")}/api`;
 
