@@ -3,9 +3,12 @@ import axios from "axios";
 const configuredBackendUrl = process.env.REACT_APP_BACKEND_URL?.trim();
 const isRapidExpressProduction = /(^|\.)rapidexpress\.online$/i.test(window.location.hostname);
 const productionBackendUrl = "https://rapidexpress-1k8u0c9dz-moorewill9112-3351s-projects.vercel.app";
-const BACKEND_URL = isRapidExpressProduction
+// Prefer the explicitly configured API endpoint in every environment. The
+// production hostname may point at an older deployment and cause login requests
+// to fail before the admin credentials are even checked.
+const BACKEND_URL = configuredBackendUrl || (isRapidExpressProduction
   ? productionBackendUrl
-  : configuredBackendUrl || window.location.origin;
+  : window.location.origin);
 export const API = `${BACKEND_URL.replace(/\/$/, "")}/api`;
 
 const api = axios.create({ baseURL: API, withCredentials: true });
