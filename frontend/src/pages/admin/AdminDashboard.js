@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Package, Truck, CheckCircle2, DollarSign, Wallet, FileText, LifeBuoy, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Package, Truck, CheckCircle2, DollarSign, Wallet, FileText, LifeBuoy, TrendingUp, ArrowUpRight, Clock3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import { Card } from "@/components/ui/card";
 import { statusMeta, STATUS_META } from "@/lib/status";
@@ -19,9 +20,19 @@ function Stat({ icon: Icon, label, value, tint }) {
 
 export default function AdminDashboard() {
   const [a, setA] = useState(null);
+  const [shipments, setShipments] = useState([]);
+  const [error, setError] = useState(false);
 
-  useEffect(() => { api.get("/analytics").then((r) => setA(r.data)).catch(() => {}); }, []);
+  useEffect(() => {
+    Promise.all([api.get("/analytics"), api.get("/shipments")])
+      .then(([analytics, shipmentList]) => {
+        setA(analytics.data);
+        setShipments(shipmentList.data.slice(0, 5));
+      })
+      .catch(() => setError(true));
+  }, []);
 
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">Unable to load operations data. Please refresh and try again.</div>;
   if (!a) return <div className="h-64 animate-pulse rounded-lg bg-slate-100" />;
 
   const chartData = Object.keys(STATUS_META).map((k) => ({
@@ -71,6 +82,30 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Recent shipments</h2>
+            <p className="text-sm text-slate-500">Latest activity from your network.</p>
+          </div>
+          <Link to="/admin/shipments" className="inline-flex items-center gap-1 text-sm font-medium text-sky-700 hover:text-sky-900">View all <ArrowUpRight className="h-4 w-4" /></Link>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {shipments.length === 0 ? <p className="px-6 py-8 text-sm text-slate-500">No shipments yet.</p> : shipments.map((shipment) => (
+            <Link key={shipment.id} to={`/admin/shipments/${shipment.id}`} className="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-slate-50">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-sm font-semibold text-sky-700">{shipment.tracking_number}</p>
+                <p className="mt-1 truncate text-sm text-slate-500">{shipment.sender?.city} to {shipment.recipient?.city}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-right">
+                <span className="text-xs font-medium text-slate-500">{statusMeta(shipment.status).label}</span>
+                <Clock3 className="h-4 w-4 text-slate-400" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
